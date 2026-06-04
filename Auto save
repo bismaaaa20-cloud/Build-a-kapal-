@@ -1,74 +1,71 @@
 -- ====================================================================
--- AUTO SAVE WRAPPER FOR BABFT GUI
+-- SKRIP GABUNGAN: BABFT MENU MAIN + AUTO SAVE (KHUSUS HP)
 -- ====================================================================
 
--- 1. Jalankan skrip asli dari GitHub
+-- 1. Menjalankan skrip asli (TheRealAsu - BABFT OP Menu)
 pcall(function()
-    loadstring(game:HttpGet('https://githubusercontent.com'))()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/TheRealAsu/BABFT/refs/heads/main/Loader.lua'))()
 end)
 
--- 2. Fungsi pencarian tombol simpan di dalam UI secara mendalam
-local function findSaveButton(parent)
+-- 2. Fungsi otomatis untuk melacak dan memicu tombol "Save" pada UI menu
+local function triggerSaveButton(parent)
     for _, child in ipairs(parent:GetChildren()) do
-        -- Mencari teks tombol yang umumnya bernama "Save", "Save Config", atau "Save Settings"
-        if child:IsA("TextButton") or child:IsA("TextLabel") then
-            local text = string.lower(child.Text)
-            if string.find(text, "save") and not string.find(text, "auto") then
-                -- Jika elemennya TextLabel, biasanya tombol aslinya adalah parent-nya
-                if child:IsA("TextLabel") then
+        -- Mencari elemen tombol dengan teks "Save"
+        if child:IsA("TextButton") then
+            local txt = string.lower(child.Text)
+            if string.find(txt, "save") and not string.find(txt, "auto") then
+                return child
+            end
+        elseif child:IsA("TextLabel") then
+            local txt = string.lower(child.Text)
+            if string.find(txt, "save") and not string.find(txt, "auto") then
+                -- Jika teks berada di dalam label, tombol aslinya adalah parent dari label ini
+                if child.Parent:IsA("TextButton") or child.Parent:IsA("GuiButton") then
                     return child.Parent
-                else
-                    return child
                 end
             end
         end
-        -- Cari lebih dalam ke sub-menu
-        local found = findSaveButton(child)
+        
+        -- Cari lebih dalam ke sub-frame menu
+        local found = triggerSaveButton(child)
         if found then return found end
     end
     return nil
 end
 
--- 3. Loop otomatis untuk menekan tombol "Save" setiap 60 detik
+-- 3. Loop Otomatis di Latar Belakang (Berjalan setiap 60 detik)
 task.spawn(function()
-    -- Beri waktu 5 detik agar menu buatan GitHub tersebut selesai terbuka di HP Anda
-    task.wait(5)
+    -- Beri jeda 10 detik di awal agar menu utama selesai terbuka sempurna di layar HP Anda
+    task.wait(10)
     
-    local LocalPlayer = game:GetService("Players").LocalPlayer
-    local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+    local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    print("[Auto-Save] Sistem pelacak tombol Save aktif di latar belakang!")
     
-    print("[Auto-Save] Sistem pelacak tombol Save aktif!")
-    
-    while task.wait(60) do -- Mengulang otomatis setiap 60 detik (1 menit)
+    while task.wait(60) do
         local saveButton = nil
         
-        -- Memindai seluruh ScreenGui yang dibuat oleh skrip eksternal
+        -- Memindai UI eksternal di PlayerGui ponsel Anda
         for _, gui in ipairs(PlayerGui:GetChildren()) do
             if gui:IsA("ScreenGui") and gui.Name ~= "Chat" and gui.Name ~= "RobloxGui" then
-                saveButton = findSaveButton(gui)
+                saveButton = triggerSaveButton(gui)
                 if saveButton then break end
             end
         end
         
-        -- Eksekusi klik otomatis jika tombol ditemukan
+        -- Jika tombol save terdeteksi, lakukan klik otomatis tanpa mengganggu permainan
         if saveButton then
-            -- Mendeteksi fungsi klik bawaan executor (virtual click)
             if firesignal then
                 firesignal(saveButton.MouseButton1Click)
-                print("[Auto-Save] Berhasil memicu fungsi Save pada menu!")
             elseif buttonactivate then
                 buttonactivate(saveButton)
-                print("[Auto-Save] Berhasil menekan tombol Save!")
             else
-                -- Metode alternatif jika fungsi executor terbatas
+                -- Metode cadangan untuk executor HP berspesifikasi rendah
                 local connections = getconnections(saveButton.MouseButton1Click)
                 for _, connection in ipairs(connections) do
                     connection:Fire()
                 end
-                print("[Auto-Save] Konfigurasi berhasil disimpan otomatis!")
             end
-        else
-            warn("[Auto-Save] Tombol 'Save' tidak ditemukan di layar. Pastikan menu skrip sudah terbuka.")
+            print("[Auto-Save] Berhasil menyimpan progres otomatis!")
         end
     end
 end)
