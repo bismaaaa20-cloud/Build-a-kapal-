@@ -1,16 +1,16 @@
 -- ====================================================================
--- SKRIP GABUNGAN: BABFT MENU MAIN + AUTO SAVE (KHUSUS HP)
+-- INSTAN AUTO SAVE (TANPA JEDA / INSTANT TRIGGER)
 -- ====================================================================
 
--- 1. Menjalankan skrip asli (TheRealAsu - BABFT OP Menu)
+-- 1. Jalankan langsung skrip utama Anda
 pcall(function()
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/TheRealAsu/BABFT/refs/heads/main/Loader.lua'))()
+    loadstring(game:HttpGet('https://githubusercontent.com'))()
 end)
 
--- 2. Fungsi otomatis untuk melacak dan memicu tombol "Save" pada UI menu
-local function triggerSaveButton(parent)
+-- 2. Fungsi pemindaian tombol Save secara agresif
+local function forceClickSave(parent)
     for _, child in ipairs(parent:GetChildren()) do
-        -- Mencari elemen tombol dengan teks "Save"
+        -- Cari teks tombol dengan kata "save"
         if child:IsA("TextButton") then
             local txt = string.lower(child.Text)
             if string.find(txt, "save") and not string.find(txt, "auto") then
@@ -19,53 +19,44 @@ local function triggerSaveButton(parent)
         elseif child:IsA("TextLabel") then
             local txt = string.lower(child.Text)
             if string.find(txt, "save") and not string.find(txt, "auto") then
-                -- Jika teks berada di dalam label, tombol aslinya adalah parent dari label ini
                 if child.Parent:IsA("TextButton") or child.Parent:IsA("GuiButton") then
                     return child.Parent
                 end
             end
         end
-        
-        -- Cari lebih dalam ke sub-frame menu
-        local found = triggerSaveButton(child)
+        local found = forceClickSave(child)
         if found then return found end
     end
     return nil
 end
 
--- 3. Loop Otomatis di Latar Belakang (Berjalan setiap 60 detik)
+-- 3. Loop Instan: Berjalan tanpa jeda awal dan klik setiap 1 detik
 task.spawn(function()
-    -- Beri jeda 10 detik di awal agar menu utama selesai terbuka sempurna di layar HP Anda
-    task.wait(10)
-    
     local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-    print("[Auto-Save] Sistem pelacak tombol Save aktif di latar belakang!")
     
-    while task.wait(60) do
+    while task.wait(1) do -- Memaksa sistem menekan tombol Save setiap 1 detik
         local saveButton = nil
         
-        -- Memindai UI eksternal di PlayerGui ponsel Anda
+        -- Pindai seluruh UI di layar HP
         for _, gui in ipairs(PlayerGui:GetChildren()) do
             if gui:IsA("ScreenGui") and gui.Name ~= "Chat" and gui.Name ~= "RobloxGui" then
-                saveButton = triggerSaveButton(gui)
+                saveButton = forceClickSave(gui)
                 if saveButton then break end
             end
         end
         
-        -- Jika tombol save terdeteksi, lakukan klik otomatis tanpa mengganggu permainan
+        -- Langsung tembak klik instan jika tombolnya muncul di layar
         if saveButton then
             if firesignal then
                 firesignal(saveButton.MouseButton1Click)
             elseif buttonactivate then
                 buttonactivate(saveButton)
             else
-                -- Metode cadangan untuk executor HP berspesifikasi rendah
                 local connections = getconnections(saveButton.MouseButton1Click)
                 for _, connection in ipairs(connections) do
                     connection:Fire()
                 end
             end
-            print("[Auto-Save] Berhasil menyimpan progres otomatis!")
         end
     end
 end)
