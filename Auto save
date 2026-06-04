@@ -1,0 +1,74 @@
+-- ====================================================================
+-- AUTO SAVE WRAPPER FOR BABFT GUI
+-- ====================================================================
+
+-- 1. Jalankan skrip asli dari GitHub
+pcall(function()
+    loadstring(game:HttpGet('https://githubusercontent.com'))()
+end)
+
+-- 2. Fungsi pencarian tombol simpan di dalam UI secara mendalam
+local function findSaveButton(parent)
+    for _, child in ipairs(parent:GetChildren()) do
+        -- Mencari teks tombol yang umumnya bernama "Save", "Save Config", atau "Save Settings"
+        if child:IsA("TextButton") or child:IsA("TextLabel") then
+            local text = string.lower(child.Text)
+            if string.find(text, "save") and not string.find(text, "auto") then
+                -- Jika elemennya TextLabel, biasanya tombol aslinya adalah parent-nya
+                if child:IsA("TextLabel") then
+                    return child.Parent
+                else
+                    return child
+                end
+            end
+        end
+        -- Cari lebih dalam ke sub-menu
+        local found = findSaveButton(child)
+        if found then return found end
+    end
+    return nil
+end
+
+-- 3. Loop otomatis untuk menekan tombol "Save" setiap 60 detik
+task.spawn(function()
+    -- Beri waktu 5 detik agar menu buatan GitHub tersebut selesai terbuka di HP Anda
+    task.wait(5)
+    
+    local LocalPlayer = game:GetService("Players").LocalPlayer
+    local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+    
+    print("[Auto-Save] Sistem pelacak tombol Save aktif!")
+    
+    while task.wait(60) do -- Mengulang otomatis setiap 60 detik (1 menit)
+        local saveButton = nil
+        
+        -- Memindai seluruh ScreenGui yang dibuat oleh skrip eksternal
+        for _, gui in ipairs(PlayerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") and gui.Name ~= "Chat" and gui.Name ~= "RobloxGui" then
+                saveButton = findSaveButton(gui)
+                if saveButton then break end
+            end
+        end
+        
+        -- Eksekusi klik otomatis jika tombol ditemukan
+        if saveButton then
+            -- Mendeteksi fungsi klik bawaan executor (virtual click)
+            if firesignal then
+                firesignal(saveButton.MouseButton1Click)
+                print("[Auto-Save] Berhasil memicu fungsi Save pada menu!")
+            elseif buttonactivate then
+                buttonactivate(saveButton)
+                print("[Auto-Save] Berhasil menekan tombol Save!")
+            else
+                -- Metode alternatif jika fungsi executor terbatas
+                local connections = getconnections(saveButton.MouseButton1Click)
+                for _, connection in ipairs(connections) do
+                    connection:Fire()
+                end
+                print("[Auto-Save] Konfigurasi berhasil disimpan otomatis!")
+            end
+        else
+            warn("[Auto-Save] Tombol 'Save' tidak ditemukan di layar. Pastikan menu skrip sudah terbuka.")
+        end
+    end
+end)
